@@ -6,6 +6,19 @@
 - Ananya Kommalapati (akomma3)
 - Allen Peng (allenp2)
 
+## Usage
+### Installing Requirements
+```
+cd path/to/ece549-final-project
+pip install -r requirements.txt
+```
+
+### To run
+```
+cd path/to/ece549-final-project
+python3 main.py
+```
+
 ## Project description and goals
 In today’s evolving educational landscape, technological advancements are consistently being used to enhance classroom procedures. One common usage of this is the common practice of scanning assignments and exam papers, so teachers and graders can more conveniently access and keep records of them. However, numerous scans can have problems due to various factors like lighting issues, handwriting legibility, etc. Because of this, we propose a computer vision system that can interpret document legibility from scanned documents and fill in any illegible spots with handwriting that mimics the input. We will explore various techniques, both classical and learned and compare the performance. For classical methods, we will look at edge/corner detection as well as image processing to try to correct the document and make it more intelligible. To compare classical feature detection algorithms to hybrid or predominantly deep learning algorithms, we also plan to implement deep learning based feature extraction/detection. While there are existing deep learning architectures we can immediately use, we hope to implement at least a semi-original deep learning classifier.
 
@@ -73,3 +86,11 @@ Kaggle dataset and dataset from students (we will get students to complete a wor
 - https://arxiv.org/pdf/1503.03957 - Paper on efficient implementation of fuzzy logic based information retrieval system, potentially useful for query matching
 
 We also plan to collect handwritten data from our peers for testing and training purposes.
+
+
+## Notes
+To update requirements:
+```
+pip install pipreqs
+pipreqs /path/to/project
+```
