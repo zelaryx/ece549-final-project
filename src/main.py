@@ -1,11 +1,15 @@
 ### main script ###
 
-# python libraries
-import sys
-import numpy as np
-import scipy
+# python libraries (none, all imports should be in subfiles)
 
 # script imports
-import preprocessing
+from ImageProcessor import ImageProcessor
+from preprocessing import *
 
-print("test")
+testImagePath = "ece549-final-project/data/1.png"
+
+# initialize object
+img = ImageProcessor(testImagePath)
+corners = detect_corners(img(0))
+
+show_corners(img(0), corners)
