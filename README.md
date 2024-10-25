@@ -94,3 +94,11 @@ To update requirements:
 pip install pipreqs
 pipreqs /path/to/project
 ```
+
+## Work Split
+### 10/31
+- Nuoyan: Picture Upload + Erosion/Dilation
+- Alyssa: Preprocessing
+- William: Training
+- Allen: Row Detection
+- Ananya: Blob thing?
