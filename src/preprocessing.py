@@ -91,3 +91,60 @@ def show_corners(img_arr: np.ndarray, corners):
     cv2.imshow("Corners Detected (press ANY KEY to exit)", img_color)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+def order_corners(corners):
+    """
+    Orders a set of four points to the following order:\
+    top-left, top-right, bottom-right, bottom-left.
+
+    Parameters
+    ----------
+    corners : numpy.ndarray
+        A 4x2 array of corners.
+
+    Returns
+    -------
+    numpy.ndarray
+        A 4x2 array of points ordered as top-left, top-right, bottom-right, bottom-left.
+    """
+
+    corners = np.array(corners)
+    
+    sort_y = corners[np.argsort(corners[:, 1])]
+    top = sort_y[:2]
+    bottom = sort_y[2:]
+
+    top_left, top_right = top[np.argsort(top[:, 0])]
+    bottom_left, bottom_right = bottom[np.argsort(bottom[:, 0])]
+
+    return np.array([top_left, top_right, bottom_right, bottom_left])
+
+def warp_corners(img, src, dst, output_size):
+    """
+    Warps an image from the source points to the destination points.
+
+    Parameters
+    ----------
+    img : numpy.ndarray
+        The input image including the to be warped portion
+    src : numpy.ndarray
+        A 4x2 array of the corners to be warped
+    dst : numpy.ndarray
+        A 4x2 array of the target corners
+    output_size : tuple
+        The output size of the warped image (width, height)
+
+    Returns
+    -------
+    numpy.ndarray
+        The warped image.
+    """
+
+    src = np.array(src, dtype=np.float32)
+    dst = np.array(dst, dtype=np.float32)
+
+    h = cv2.getPerspectiveTransform(src, dst)
+
+    warped_img = cv2.warpPerspective(img, h, output_size)
+
+    return warped_img

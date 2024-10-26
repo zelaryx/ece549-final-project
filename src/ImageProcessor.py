@@ -17,9 +17,11 @@ class ImageProcessor:
     Attributes
     ----------
     arr : numpy.ndarray
-        The color image as a NumPy array.
+        The color image as a Numpy array.
     arr_greyscale : numpy.ndarray
-        The grayscale version of the image as a NumPy array.
+        The grayscale version of the image as a Numpy array.
+    size : tuple
+        The (w, h) of the image.
     """
     def __init__(self, path: str):
 
@@ -31,6 +33,7 @@ class ImageProcessor:
         # store numpy arrays
         self.arr = np.array(original)
         self.arr_greyscale = np.array(greyscale)
+        self.shape = self.arr_greyscale.shape
 
     def show(self):
         Image.open(self.image_path).show()

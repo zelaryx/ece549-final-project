@@ -1,6 +1,7 @@
 ### main script ###
 
-# python libraries (none, all imports should be in subfiles)
+# python libraries (i changed my mind)
+from PIL import Image
 
 # script imports
 from ImageProcessor import ImageProcessor
@@ -10,6 +11,19 @@ testImagePath = "ece549-final-project/data/1.png"
 
 # initialize object
 img = ImageProcessor(testImagePath)
+
+# find corners of paper
 corners = detect_corners(img(0))
 
-show_corners(img(0), corners)
+# transform corners of paper to image size
+w, h = img.shape
+new_corners = np.array( [[0,0],
+                         [h,0],
+                         [h,w],
+                         [0,w]] )
+
+transform = warp_corners(img(1), order_corners(corners), new_corners, (h,w))
+
+Image.fromarray(transform).show()
+
+# show_corners(img(0), order_corners(corners))
