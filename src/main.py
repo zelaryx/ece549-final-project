@@ -22,8 +22,11 @@ new_corners = np.array( [[0,0],
                          [h,w],
                          [0,w]] )
 
-transform = warp_corners(img(1), order_corners(corners), new_corners, (h,w))
+transformed = warp_corners(img(1), order_corners(corners), new_corners, (h,w))
 
-Image.fromarray(transform).show()
+# apply filters
+filtered = filter_image(transformed)
+
+Image.fromarray(filtered).show()
 
 # show_corners(img(0), order_corners(corners))

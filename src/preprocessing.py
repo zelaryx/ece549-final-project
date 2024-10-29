@@ -148,3 +148,21 @@ def warp_corners(img, src, dst, output_size):
     warped_img = cv2.warpPerspective(img, h, output_size)
 
     return warped_img
+
+def filter_image(img):
+    """
+    Takes an image and applies binary filter + whatnot to remove artifacts
+
+    Parameters
+    ----------
+    img : numpy.ndarray
+        The input image
+
+    Returns
+    -------
+    numpy.ndarray
+        The filtered image
+    """
+
+    _, binary = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    return binary
