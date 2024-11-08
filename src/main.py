@@ -1,32 +1,28 @@
 ### main script ###
 
-# python libraries (i changed my mind)
+# python library imports
 from PIL import Image
+import os
 
 # script imports
 from ImageProcessor import ImageProcessor
-from preprocessing import *
 
-testImagePath = "ece549-final-project/data/1.png"
+base_path = "./data/worksheets"
 
-# initialize object
-img = ImageProcessor(testImagePath)
+## TODO: for some reason images 5 and 6 are broken
+for i in range(20):
+    clean_p1 = f"{base_path}/{str(i)}/clean/p1.JPG"
+    clean_p2 = f"{base_path}/{str(i)}/clean/p2.JPG"
 
-# find corners of paper
-corners = detect_corners(img(0))
+    if os.path.exists(clean_p1) and os.path.exists(clean_p2):
 
-# transform corners of paper to image size
-w, h = img.shape
-new_corners = np.array( [[0,0],
-                         [h,0],
-                         [h,w],
-                         [0,w]] )
+        # initialize image object
+        img1 = ImageProcessor(clean_p1)
+        img2 = ImageProcessor(clean_p2)
 
-transformed = warp_corners(img(1), order_corners(corners), new_corners, (h,w))
+        # show digitized images
+        Image.fromarray(img1("DIGITIZED")).show()
+        Image.fromarray(img2("DIGITIZED")).show()
 
-# apply filters
-filtered = filter_image(transformed)
-
-Image.fromarray(filtered).show()
-
-# show_corners(img(0), order_corners(corners))
+    else:
+        print(f"Files not found in folder {i}")

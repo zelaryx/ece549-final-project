@@ -1,6 +1,11 @@
 ### image class to store different aspects of the image ###
+
+# python library imports
 from PIL import Image
 import numpy as np
+
+# script imports
+from preprocessing import *
 
 class ImageProcessor:
     """
@@ -34,19 +39,21 @@ class ImageProcessor:
         self.arr = np.array(original)
         self.arr_greyscale = np.array(greyscale)
         self.shape = self.arr_greyscale.shape
+        self.arr_digitized = digitize(self.arr)
 
     def show(self):
         Image.open(self.image_path).show()
 
-    def __call__(self, mode=0):
+    def __call__(self, mode="ORIGINAL"):
         """
         Returns the image as a numpy array in either color or greyscale.
 
         Parameters
         ----------
-        mode : 0 or 1
-            0 -> original color
-            1 -> greyscale
+        mode : string
+            "ORIGINAL"  -> original color
+            "GREYSCALE" -> greyscale
+            "DIGITIZED" -> digitized
 
         Returns
         -------
@@ -59,9 +66,11 @@ class ImageProcessor:
             If `mode` is not 0 or 1.
 
         """
-        if mode == 0:
+        if mode == "ORIGINAL":
             return self.arr
-        elif mode == 1:
+        elif mode == "GREYSCALE":
             return self.arr_greyscale
+        elif mode == "DIGITIZED":
+            return self.arr_digitized
         else:
-            raise ValueError("Invalid mode. Use 0 for color or 1 for greyscale.")
+            raise ValueError("Invalid mode.")
