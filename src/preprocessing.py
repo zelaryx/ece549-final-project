@@ -1,7 +1,10 @@
 ### preprocessing functions ###
-
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
+from PIL import Image
+from scipy.signal import medfilt2d
+
 
 def detect_corners(img_arr: np.ndarray):
     """
@@ -27,25 +30,19 @@ def detect_corners(img_arr: np.ndarray):
     # convert to greyscale if not already
     grey = img_arr if len(img_arr.shape) == 2 else cv2.cvtColor(img_arr, cv2.COLOR_BGR2GRAY)
 
-    ### NUOYAN THESE KERNEL SIZES AND THRESHOLD NUMBERS NEED
-    ### TO BE FIXED BECAUSE THEYRE HARDCODED TO MATCH THE IMAGE SIZE
-    ## TODO: fix hardcoded numbers below
-
     # gaussian blur to remove noise
-    blurred = cv2.GaussianBlur(grey, (9, 9), 0)
+    blurred = cv2.GaussianBlur(grey, (5, 5), 0)
 
     # dilate to help avoid text from being detected as edges
-    kernel = np.ones((15,15), np.uint8)
+    kernel = np.ones((7,7), np.uint8)
     dilated = cv2.dilate(blurred, kernel, iterations=1)
 
     # canny edge detector
     edges = cv2.Canny(dilated, 50, 150)
 
     # dilate again to thicken lines in canny edge detector
-    kernel = np.ones((5,5), np.uint8)
+    kernel = np.ones((3,3), np.uint8)
     edges = cv2.dilate(edges, kernel, iterations=1)
-
-    ### TILL HERE
 
     # contour
     contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -68,15 +65,38 @@ def detect_corners(img_arr: np.ndarray):
 
         # first approximation to have 4 points should be the paper
         if len(approx) == 4:
-            corners = approx
-            break
+            return np.squeeze(approx)
 
-    # get rid of the extra dimension in the middle idk why it needs that extra dimension ngl
-    corners = np.squeeze(corners)
+    # If we reach here, then we could not find 4 corners, try using morphology
+    # This is essentially a 2nd attempt to find 4 corners, using new method
+    blurred = cv2.GaussianBlur(grey, (3, 3), 0)
 
-    # return
-    return corners
+    # otsu threshold on blurred image
+    thresh = cv2.threshold(blurred, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
 
+    # attempt using morphology
+    kernel = np.ones((7,7), np.uint8)
+    morph = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+    morph = cv2.morphologyEx(morph, cv2.MORPH_OPEN, kernel)
+
+    contours, _ = cv2.findContours(morph, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # sort by area (we're assuming the largest contour will be the paper)
+    contours = sorted(contours, key=cv2.contourArea, reverse=True)
+
+    # search from largest to smallest for a contour that looks like it has 4 corners
+    for contour in contours:
+        # approximate contour into polygon
+        epsilon = 0.05 * cv2.arcLength(contour, True)
+        approx = cv2.approxPolyDP(contour, epsilon, True)
+
+        # first approximation to have 4 points should be the paper
+        if len(approx) == 4:
+
+            # remove extra dim and return
+            return np.squeeze(approx)
+
+    raise Exception("Could not find corners")
 
 def show_corners(img_arr: np.ndarray, corners):
     """
@@ -167,6 +187,29 @@ def warp_corners(img, src, dst, output_size):
     return warped_img
 
 
+def binarize(img_arr: np.ndarray):
+    """
+    Takes an image and applies binary filter to remove artifacts.
+
+    Parameters
+    ----------
+    img_arr : numpy.ndarray
+        The input image
+
+    Returns
+    -------
+    numpy.ndarray
+        The filtered image
+    """
+    if len(img_arr.shape) == 3:
+        img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2GRAY)
+
+    bound = np.mean(img_arr) - 16
+
+    result = np.where(img_arr < bound, 0, 255)
+    
+    return result.astype(np.uint8)
+
 def remove_shadows(img_arr: np.ndarray):
     """
     Takes color image of just the paper and removes shadows on the paper
@@ -186,7 +229,7 @@ def remove_shadows(img_arr: np.ndarray):
 
     result_norm_planes = []
     for plane in rgb_planes:
-        dilated_img = cv2.dilate(plane, np.ones((7,7), np.uint8))
+        dilated_img = cv2.dilate(plane, np.ones((3,3), np.uint8))
         bg_img = cv2.medianBlur(dilated_img, 21)
         diff_img = 255 - cv2.absdiff(plane, bg_img)
         norm_img = cv2.normalize(diff_img,None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
@@ -196,36 +239,321 @@ def remove_shadows(img_arr: np.ndarray):
 
     return result_norm
 
-
-def filter_image(img_arr: np.ndarray):
+def enhance_contrast(img_arr: np.ndarray, factor=2):
     """
-    Takes an image and applies binary filter + whatnot to remove artifacts.
-
-    "whatnot" is currently nothing LOL
-
+    Increases contrast for ease of detection
+    
     Parameters
     ----------
     img_arr : numpy.ndarray
-        The input image
+        A NumPy array representing the image.
+    
+    factor : int
+        Number determining amount of constract
+        x < 1: decrease contrast
+        x > 1: increase contrast
 
     Returns
     -------
     numpy.ndarray
-        The filtered image
+        Resulting contrast enhanced image
+
     """
+    image = img_arr.astype(np.float32)
+
+    new_image = np.clip(factor * (image - 128) + 128, 0, 255)
+
+    return new_image.astype(np.uint8)
+
+def denoise(img_arr: np.ndarray, factor = 5):
+    """
+    Applies high-quality non-local means denoising
+    
+    Parameters
+    ----------
+    img_arr : numpy.ndarray
+        A NumPy array representing the image.
+
+    kernel_size : int
+        Number determining kernel_size for controlling amount of denoising
+
+    Returns
+    -------
+    numpy.ndarray
+        Resulting blurred image
+
+    """
+    return cv2.fastNlMeansDenoising(img_arr, h = factor)
+
+def blur_denoise(img_arr: np.ndarray, factor = 5):
+    """
+    Applies basic-quality medianBlur denoising
+    
+    Parameters
+    ----------
+    img_arr : numpy.ndarray
+        A NumPy array representing the image.
+
+    kernel_size : int
+        Number determining kernel_size for controlling amount of denoising
+
+    Returns
+    -------
+    numpy.ndarray
+        Resulting blurred image
+
+    """
+    # Apply a median filter to remove salt-and-pepper noise
+    return cv2.medianBlur(img_arr, factor)
+
+def auto_expose(img_arr: np.ndarray):
+
+    """
+    Linear adjustment of pixel brightness, such that the resulting average pixel
+    value is 200. Result is clipped to (0, 255) range
+    
+    Parameters
+    ----------
+    img_arr : numpy.ndarray
+        A NumPy array representing the image.
+
+    Returns
+    -------
+    numpy.ndarray
+        Resulting brightness adjusted image
+
+    """
+
+    ideal_avg = 200
+    cur_avg = np.mean(img_arr)
+
+    gap = ideal_avg - cur_avg
+    result = img_arr + gap
+
+    return np.clip(result, 0, 255).astype(np.uint8)
+
+def enhance_shadow(img_arr: np.ndarray, factor=2):
+
+    """
+    Alter the shadows by applying gamma correction.
+
+    Parameters
+    ----------
+    img_arr : numpy.ndarray
+        A NumPy array representing the image.
+    
+    factor : int 
+        factor < 1 increases brightness of shadows 
+        factor > 1 reduces brightness of shadows 
+
+    Returns
+    -------
+    numpy.ndarray
+        Result image
+    
+    :return: Image with enhanced shadows as a NumPy array.
+    """
+    # Apply gamma correction
+    img_normalized = img_arr / 255.0
+    img_corrected = np.power(img_normalized, factor)
+    
+    # Return in [0, 255] range as integer
+    return np.clip(img_corrected * 255, 0, 255).astype(np.uint8)
+
+def dilate(img_arr: np.ndarray, kernel_size=3, iterations=1):
+
+    """
+    Widens lines/text to connect potentially unconnected parts of letters
+
+    Parameters
+    ----------
+    img_arr : numpy.ndarray
+        A NumPy array representing the image.
+    
+    kernel_size : int 
+        Integer value determining degree of dilation
+    
+    iterations: int
+
+    Returns
+    -------
+    numpy.ndarray
+        Result image
+    
+    :return: Image with dilated text as a NumPy array.
+    """
+
+    kernel = np.ones((kernel_size, kernel_size), np.uint8) 
+    return cv2.dilate(img_arr, kernel, iterations=iterations)
+
+def erode(img_arr: np.ndarray, kernel_size=3, iterations=1):
+
+    """
+    Narrows text/lines agter dilation to be more legible
+
+    Parameters
+    ----------
+    img_arr : numpy.ndarray
+        A NumPy array representing the image.
+    
+    kernel_size : int 
+        Integer value determining degree of erosion
+    
+    iterations: int
+
+    Returns
+    -------
+    numpy.ndarray
+        Result image
+    
+    :return: Image with eroded text as a NumPy array.
+    """
+
+    kernel = np.ones((kernel_size, kernel_size), np.uint8) 
+    return cv2.erode(img_arr, kernel, iterations=iterations)  
+
+def remove_extremes(img_arr: np.ndarray):
+
+    """
+    Eliminates non-paper artifacts from image in preprocessing:
+    All values outside a specified range of (low, high) are set to 0 or 255 respectively
+
+    Parameters
+    ----------
+    img_arr : numpy.ndarray
+        A NumPy array representing the image.
+
+    Returns
+    -------
+    numpy.ndarray
+        Result image
+    
+    :return: Image with semi-bright / semi-dark (non-paper, non-background) removed
+    """
+
+    # Convert to grayscale if needed
     if len(img_arr.shape) == 3:
         img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2GRAY)
 
-    # enhanced = cv2.convertScaleAbs(img_arr, alpha=1.5, beta=30) # this gets rid of pencil marks....
-    inverted = cv2.bitwise_not(img_arr)
-    kernel = np.ones((3,3), np.uint8)
-    inverted_dilated = cv2.dilate(inverted, kernel, iterations=1)
+    # Delete all pixels below brightness 100
+    filtered_arr = img_arr[img_arr > 100]
 
-    uninverted = cv2.bitwise_not(inverted_dilated)
+    # We should be left with mostly the "paper" and some noise
+    counts = np.bincount(filtered_arr)
 
-    # _, binary = cv2.threshold(uninverted, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    _, binary = cv2.threshold(uninverted, 220, 255, cv2.THRESH_BINARY)
-    return binary
+    # Find the most occurring brightness in the paper
+    likely_paper_value = np.argmax(counts)
+
+    # We only want to keep values with +-64 from the paper brightness
+    low = max(likely_paper_value - 64, 35)
+    high = min(likely_paper_value + 64, 220)
+
+
+    # Attempt to remove all non-paper artifacts
+    result = img_arr.copy()
+    result[img_arr < low] = 0
+    result[img_arr > high] = 255
+    return result
+
+def full_cleaning(img_arr: np.ndarray, display_all_results=0):
+
+    """
+    Runs the full suite of image operations in a specific order to enhance
+    corner detection before image is extracted. Auto adjusts depending on
+    characteristics of input image, fixing "dirty" images
+
+    Parameters
+    ----------
+    img_arr : numpy.ndarray
+        A NumPy array representing the image.
+
+    display_all_results : int (0, 1)
+        If 1, display each result image after each step 
+
+    Returns
+    -------
+    numpy.ndarray
+        Result image
+    
+    :return: Modified Image specifically to be used for corner detection
+    """
+
+    # For images that may be too bright, attempt darkening
+    if np.mean(img_arr) > 128:
+
+        # Step 1: Darken image shadows
+        shadows_darkened = enhance_shadow(img_arr)
+
+        # Step 2: Denoise the image
+        denoised = denoise(shadows_darkened)
+
+        # Step 3: Darken image shadows AGAIN
+        shadows_darkened2 = enhance_shadow(denoised)
+
+        # Step 4: Denoise the image AGAIN
+        denoised2 = denoise(shadows_darkened2)
+
+    # Else, for darker images, attempt to brighten
+    else:
+        # Step 1: Brighten image highlights
+        shadows_darkened = enhance_shadow(img_arr, factor=0.5)
+
+        # Step 2: Denoise the image
+        denoised = denoise(shadows_darkened)
+
+        # Step 3: Brighten image highlights AGAIN
+        shadows_darkened2 = enhance_shadow(denoised, factor=0.8)
+
+        # Step 4: Denoise the image AGAIN
+        denoised2 = denoise(shadows_darkened2)
+
+    # Step 5: Erode
+    eroded = erode(denoised2, kernel_size=3)
+
+    # Step 6: Dilate2
+    dilated = dilate(eroded, kernel_size=3)
+
+    # Step 7: Auto Adjust Exposure
+    auto_exposed = auto_expose(dilated)
+
+     # Step 8: Remove Extremities
+    result = remove_extremes(auto_exposed)
+
+    if display_all_results:
+
+        print("Step 1")
+        plt.imshow(shadows_darkened)
+        plt.show()
+
+        print("Step 2")
+        plt.imshow(denoised)
+        plt.show()
+
+        print("Step 3")
+        plt.imshow(shadows_darkened2)
+        plt.show()
+
+        print("Step 4")
+        plt.imshow(denoised2)
+        plt.show()
+
+        print("Step 5")
+        plt.imshow(eroded)
+        plt.show()
+
+        print("Step 6")
+        plt.imshow(dilated)
+        plt.show()
+
+        print("Step 7")
+        plt.imshow(auto_exposed)
+        plt.show()
+
+        print("Step 8")
+        plt.imshow(result, cmap='gray')
+        plt.show()
+
+    return Image.fromarray(result)
 
 
 def digitize(img_arr: np.ndarray):
@@ -248,8 +576,8 @@ def digitize(img_arr: np.ndarray):
         The digitized black and white image
     """
 
-    # find corners of paper
-    corners = detect_corners(img_arr)
+    # find corners of paper, on fully_cleaned np_array of image
+    corners = detect_corners(np.array(full_cleaning(img_arr)))
     # show_corners(img_arr, order_corners(corners))
 
     # transform corners of paper to image size (preserves color)
@@ -265,6 +593,6 @@ def digitize(img_arr: np.ndarray):
     shadowless = remove_shadows(transformed)
 
     # apply filters (binarization)
-    filtered = filter_image(shadowless)
+    filtered = binarize(shadowless)
 
     return filtered
