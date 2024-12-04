@@ -10,7 +10,7 @@ def cc_analysis(img_gray, img):
     # dynamically select c-value based on the image contrast
     contrast = np.std(img_gray)
     val= max(1, int(contrast / 10)) 
-    print(val)
+    # print(val)
     
      # Higher contrast -> Higher `C`
     thresh = cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 13, val)
@@ -19,7 +19,7 @@ def cc_analysis(img_gray, img):
     # Display the thresholded image using matplotlib
     plt.imshow(thresh, cmap='gray')
     plt.axis('off')
-    plt.show()
+    # plt.show()
 
 
     # apply connected component analysis to the thresholded image
@@ -28,7 +28,7 @@ def cc_analysis(img_gray, img):
 
     mask = np.zeros(img_gray.shape, dtype="uint8")
 
-    output_dir = '/Users/ananyakommalapati/Desktop/ece549/final_project/cc_outputs/32/1/'
+    output_dir = '/Users/alyssahuang/Downloads/cc_outputs'
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -66,16 +66,17 @@ def cc_analysis(img_gray, img):
     # characters
     plt.imshow(mask, cmap='gray')
     plt.axis('off')
-    plt.show()
+    # plt.show()
 
     plt.imshow(img)
-    plt.show()
+    # plt.show()
 
 def load_images(img_path):
 
     img = cv2.imread(img_path)
     blurred_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    print(pytesseract.image_to_boxes(Image.open(img_path)))
+    boxes = pytesseract.image_to_boxes(Image.open(img_path))
+    text = ''.join([line.split()[0] for line in boxes.splitlines()])
 
     # Apply Gaussian blur to reduce noise
     # blurred_image = cv2.GaussianBlur(img_gray, (3, 3), 0)
@@ -85,12 +86,13 @@ def load_images(img_path):
     blurred_image = cv2.erode(blurred_image, kernel, iterations=1)
 
     plt.imshow(blurred_image, cmap='gray')
-    plt.show()
+    # plt.show()
 
     cc_analysis(blurred_image, img)
+    return text
 
 def main():
-    load_images('/Users/ananyakommalapati/Desktop/ece549/final_project/32/tmp/1.png')
+    load_images('data/samples/sample_text.png')
 
 if __name__ == '__main__':
     main()
