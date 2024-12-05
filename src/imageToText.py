@@ -5,6 +5,8 @@ import os
 import pytesseract
 from PIL import Image
 
+from textCorrection import spellcheck
+
 def cc_analysis(img_gray, img):
 
     # dynamically select c-value based on the image contrast
@@ -92,7 +94,8 @@ def load_images(img_path):
     return text
 
 def main():
-    load_images('data/samples/sample_text.png')
+    text = load_images('data/samples/sample_text_3.png')
+    print(spellcheck(text))
 
 if __name__ == '__main__':
     main()
