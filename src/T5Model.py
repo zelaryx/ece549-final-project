@@ -1,6 +1,8 @@
 ### class to be the T5 spell check model wrapper ###
 
 # python library imports
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from transformers import T5ForConditionalGeneration, AutoTokenizer
 
 
