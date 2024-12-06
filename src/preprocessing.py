@@ -596,3 +596,28 @@ def digitize(img_arr: np.ndarray):
     filtered = binarize(shadowless)
 
     return filtered
+
+def simple_digitize(img_arr: np.ndarray):
+    """
+    Takes and performs the following steps:
+        1. removes shadows
+        2. binarize image
+
+    Parameters
+    ----------
+    img_arr : numpy.ndarray
+        The COLORED input image array
+
+    Returns
+    -------
+    numpy.ndarray
+        The digitized black and white image
+    """
+
+    # remove shadows (preserves color)
+    shadowless = remove_shadows(img_arr)
+
+    # apply filters (binarization)
+    filtered = binarize(shadowless)
+
+    return filtered
