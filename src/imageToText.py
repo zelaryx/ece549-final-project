@@ -71,6 +71,87 @@ def cc_analysis(img_gray, img):
     plt.imshow(img)
     plt.show()
 
+def cc_analysis_word(img_gray, img):
+
+    # dynamically select c-value based on the image contrast
+    contrast = np.std(img_gray)
+    val= max(1, int(contrast / 10)) 
+    print(val)
+    
+    # Higher contrast -> Higher `C`
+    thresh = cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 13, val)
+
+
+    # Display the thresholded image using matplotlib
+    plt.imshow(thresh, cmap='gray')
+    plt.axis('off')
+    plt.show()
+
+
+    # apply connected component analysis to the thresholded image
+    output = cv2.connectedComponentsWithStats(thresh, 4, cv2.CV_32S)
+    (numLabels, labels, stats, centroids) = output
+
+    mask = np.zeros(img_gray.shape, dtype="uint8")
+
+    output_dir = '/Users/ananyakommalapati/Desktop/ece549/final_project/cc_outputs_new/32/1/'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    sorted_cc = []
+    # (left, char)
+
+
+    # loop over the number of unique connected component labels, skipping
+    # over the first label (as label zero is the background)
+    for i in range(1, numLabels):
+        # extract the connected component statistics for the current label
+        x = stats[i, cv2.CC_STAT_LEFT]
+        y = stats[i, cv2.CC_STAT_TOP]
+        w = stats[i, cv2.CC_STAT_WIDTH]
+        h = stats[i, cv2.CC_STAT_HEIGHT]
+        area = stats[i, cv2.CC_STAT_AREA]
+
+        # these dimensions are dependent on how the student wrote -> angled in a particular way??
+        keepWidth = w > 0 and w < 1000
+        keepHeight = h > 0 and h < 1000
+        keepArea = area > 100 and area < 1000
+
+        if keepWidth and keepHeight and keepArea:
+            # construct a mask for the current connected component and
+            # then take the bitwise OR with the mask
+            componentMask = (labels == i).astype("uint8") * 255
+            mask = cv2.bitwise_or(mask, componentMask)
+
+            # Save the connected component to a file
+
+            sorted_cc.append((x, y, w, h))
+
+    # now sort by top left coord so that we are going left to right
+    print(sorted_cc)
+    sorted_cc.sort(key=lambda x: x[0])
+    print(sorted_cc)
+
+    for i in range(len(sorted_cc)):
+        component_path = os.path.join(output_dir, f'component_{i}.png')
+        component_img = img[sorted_cc[i][1]:sorted_cc[i][1]+sorted_cc[i][3], sorted_cc[i][0]:sorted_cc[i][0]+sorted_cc[i][2]]
+        # component_img = img[y:y+h, x:x+w]
+        cv2.imwrite(component_path, component_img)
+        cv2.rectangle(img, (sorted_cc[i][0], sorted_cc[i][1]), (sorted_cc[i][0] + sorted_cc[i][2], sorted_cc[i][1] + sorted_cc[i][3]), (0, 255, 0), 2)
+        # cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+    # show the original input image and the mask for the license plate
+    # characters
+    plt.imshow(mask, cmap='gray')
+    plt.axis('off')
+    plt.show()
+
+    plt.imshow(img)
+    plt.show()
+
+
+    return sorted_cc
+
 def load_images(img_path):
 
     img = cv2.imread(img_path)
@@ -89,8 +170,24 @@ def load_images(img_path):
 
     cc_analysis(blurred_image, img)
 
+
+def space_recog(img_path):
+    img = cv2.imread(img_path)
+    blurred_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    kernel = np.ones((11,11), np.uint8)
+    blurred_image = cv2.erode(blurred_image, kernel, iterations=1)
+
+    blurred_image = cv2.dilate(blurred_image, kernel, iterations=1)
+
+    plt.imshow(blurred_image, cmap='gray')
+    plt.show()
+
+    sorted_words = cc_analysis_word(blurred_image, img)
+
 def main():
     load_images('/Users/ananyakommalapati/Desktop/ece549/final_project/32/tmp/1.png')
+    space_recog('/Users/ananyakommalapati/Desktop/ece549/final_project/32/tmp/1.png')
 
 if __name__ == '__main__':
     main()
