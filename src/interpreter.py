@@ -49,27 +49,37 @@ def process_image(image_path, show=False):
     return image
 
 def interpret_characters(directory):
-    BASE_DIR = "./char_interpreter/"
+    BASE_DIR = "/home/wshen2011/.cache/kagglehub/datasets/crawford/emnist/versions/3/"
     label_map = pd.read_csv(BASE_DIR+'emnist-bymerge-mapping.txt', sep='\s+', header=None)
     # create a dictionary that maps each index to its corresponding ASCII character. 
     alphabets_mapper = {row[0]: chr(row[1]) for _, row in label_map.iterrows()}
 
     # Load the model architecture and weights together
-    model = tf.keras.models.load_model(BASE_DIR+'full_dataset_20241113_1436/full_dataset.keras')
+    # model = tf.keras.models.load_model('models/full_dataset_20241206_0125/full_dataset.keras')
+    model = tf.keras.models.load_model('models/full_dataset_20241113_1436/full_dataset.keras')
 
     string_out = ""
-    for filename in sorted(os.listdir(directory)):
-        if filename.lower().endswith('.jpg') or filename.lower().endswith('.png'):
-            img_path = os.path.join(directory, filename)
-            image = process_image(img_path)
+    for word_dir in natsort.natsorted(os.listdir(directory)):
+        for char_file in natsort.natsorted(os.listdir(os.path.join(directory,word_dir))):
+            if char_file.lower().endswith('.jpg') or char_file.lower().endswith('.png'):
+                img_path = os.path.join(directory, word_dir, char_file)
+                image = process_image(img_path)
 
-            # Run the model on the image
-            predictions = model.predict(image)
+                # Run the model on the image
+                predictions = model.predict(image)
 
-            # Find the class with the highest probability
-            # print(predictions)
-            predicted_class = np.argmax(predictions)
-
-            string_out += str(alphabets_mapper[predicted_class])
-
+                # Find the class with the highest probability
+                # print(predictions)
+                predicted_class = np.argmax(predictions)
+                predicted_char = str(alphabets_mapper[predicted_class])
+                string_out += predicted_char
+                ending = ""
+                if char_file.lower().endswith('.jpg'):
+                    ending = ".jpg"
+                else:
+                    ending = ".png"
+                new_file_name = f"{predicted_char}{ending}"
+                new_file_path = os.path.join(directory, word_dir, new_file_name)
+                os.rename(img_path, new_file_path)
+        string_out += " "
     return string_out
