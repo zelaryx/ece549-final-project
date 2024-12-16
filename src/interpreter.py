@@ -9,42 +9,37 @@ from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
+import natsort
 
 def process_image(image_path, show=False):
+    # image = load_img(image_path, target_size=(56, 56), color_mode="grayscale")
+    # image = img_to_array(image).astype('float32')
+    # image = np.pad(image, pad_width=((10, 10), (10, 10), (0, 0)), mode='constant', constant_values=255)
     image = load_img(image_path, target_size=(56, 56), color_mode="grayscale")
     image = img_to_array(image).astype('float32')
-    image = np.pad(image, pad_width=((10, 10), (10, 10), (0, 0)), mode='constant', constant_values=255)
-    # Rescale the padded image back to 28x28 pixels
+    image = np.pad(image, pad_width=((16, 16), (16, 16), (0, 0)), mode='constant', constant_values=255)
+
     image = tf.image.resize(image, [56, 56])
 
     image = image.numpy()
-    # # Normalize the pixel values
-    # image = (255.0 - image*1.0)
 
-    # Define a kernel for dilation
     kernel = np.ones((2, 2), np.float32)
-        
-    # Apply erosion
     image = cv2.erode(image, kernel, iterations=2)
-
-    # Apply dilation to the eroded image
     image = cv2.dilate(image, kernel, iterations=2)
 
     image = 255.0 - image
 
-    image = np.where(image > 255/4, image, 0)
+    image = np.where(image > 255/3, image, 0)
 
     image = np.expand_dims(image, axis=-1)
     image = tf.image.resize(image, [28, 28])
 
-    # # Convert the rescaled image to a NumPy array
     image = image.numpy()
 
     if show:
         plt.imshow(image)
         plt.show()
 
-    # Reshape the image to match the model's input shape (1, 28, 28, 1)
     image = np.reshape(image, (1, 28, 28, 1))
     return image
 
@@ -55,8 +50,8 @@ def interpret_characters(directory):
     alphabets_mapper = {row[0]: chr(row[1]) for _, row in label_map.iterrows()}
 
     # Load the model architecture and weights together
-    # model = tf.keras.models.load_model('models/full_dataset_20241206_0125/full_dataset.keras')
-    model = tf.keras.models.load_model('models/full_dataset_20241113_1436/full_dataset.keras')
+    model = tf.keras.models.load_model('models/full_dataset_20241206_0125/full_dataset.keras')
+    # model = tf.keras.models.load_model('models/full_dataset_20241113_1436/full_dataset.keras')
 
     string_out = ""
     for word_dir in natsort.natsorted(os.listdir(directory)):
