@@ -73,8 +73,11 @@ def interpret_characters(directory):
                     ending = ".jpg"
                 else:
                     ending = ".png"
-                new_file_name = f"{predicted_char}{ending}"
+                new_file_name = f"{predicted_char}_{counter}{ending}"
                 new_file_path = os.path.join(directory, word_dir, new_file_name)
                 os.rename(img_path, new_file_path)
+                counter += 1
         string_out += " "
     return string_out
+
+print(interpret_characters("../ece549-final-project/output_lowercase"))
