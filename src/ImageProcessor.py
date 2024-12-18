@@ -1,7 +1,7 @@
 ### image class to store different aspects of the image ###
 
 # python library imports
-from PIL import Image
+from PIL import Image, ImageOps
 import numpy as np
 
 # script imports
@@ -18,6 +18,11 @@ class ImageProcessor:
     path : str
         A string of the path the image.
 
+    auto_resize 
+        (default = 1)
+        Resizes the image to a standardized size, while maintaining proportions
+        Maximizes either the height or width at 1600 px
+
 
     Attributes
     ----------
@@ -25,14 +30,35 @@ class ImageProcessor:
         The color image as a Numpy array.
     arr_greyscale : numpy.ndarray
         The grayscale version of the image as a Numpy array.
-    size : tuple
+    shape : tuple
         The (w, h) of the image.
+    arr_digitized : numpy.ndarray
+        The binarized and warped version of the image as a Numpy array.
     """
-    def __init__(self, path: str):
+    def __init__(self, path: str, auto_norm = 1):
 
-        image_path = path
-        
-        original = Image.open(image_path)
+        # Extracts exif info (whether image has been rotated 90deg)
+        original = ImageOps.exif_transpose(Image.open(path))
+
+        # By default, always normalize for kernel sizes
+        if auto_norm:
+
+            # Normalize image to 1600px as max dimension
+            max_dim = 1600
+            w, h = original.size
+
+            # Algebra/Geometry for new dimensions
+            if h < w:
+                resize_width = max_dim
+                resize_height = int((max_dim / w) * h)
+
+            else:
+                resize_height = max_dim
+                resize_width = int((max_dim / h) * w)
+
+            # Resize accordingly
+            original = original.resize((resize_width, resize_height))
+
         greyscale = original.convert("L")
         
         # store numpy arrays
