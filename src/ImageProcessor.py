@@ -66,6 +66,7 @@ class ImageProcessor:
         self.arr_greyscale = np.array(greyscale)
         self.shape = self.arr_greyscale.shape
         self.arr_digitized = digitize(self.arr)
+        self.arr_simple_digitized = simple_digitize(self.arr)
 
     def show(self):
         Image.open(self.image_path).show()
@@ -80,6 +81,7 @@ class ImageProcessor:
             "ORIGINAL"  -> original color
             "GREYSCALE" -> greyscale
             "DIGITIZED" -> digitized
+            "SIMPLE_DIGITIZED" -> digitized but without the warping
 
         Returns
         -------
@@ -98,5 +100,7 @@ class ImageProcessor:
             return self.arr_greyscale
         elif mode == "DIGITIZED":
             return self.arr_digitized
+        elif mode == "SIMPLE_DIGITIZED":
+            return self.arr_simple_digitized
         else:
             raise ValueError("Invalid mode.")

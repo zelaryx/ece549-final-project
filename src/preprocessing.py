@@ -5,6 +5,10 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.signal import medfilt2d
 
+import matplotlib.pyplot as plt
+from PIL import Image
+from scipy.signal import medfilt2d
+
 
 def detect_corners(img_arr: np.ndarray):
     """
@@ -591,6 +595,31 @@ def digitize(img_arr: np.ndarray):
 
     # remove shadows (preserves color)
     shadowless = remove_shadows(transformed)
+
+    # apply filters (binarization)
+    filtered = binarize(shadowless)
+
+    return filtered
+
+def simple_digitize(img_arr: np.ndarray):
+    """
+    Takes and performs the following steps:
+        1. removes shadows
+        2. binarize image
+
+    Parameters
+    ----------
+    img_arr : numpy.ndarray
+        The COLORED input image array
+
+    Returns
+    -------
+    numpy.ndarray
+        The digitized black and white image
+    """
+
+    # remove shadows (preserves color)
+    shadowless = remove_shadows(img_arr)
 
     # apply filters (binarization)
     filtered = binarize(shadowless)
