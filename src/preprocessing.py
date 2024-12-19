@@ -54,7 +54,7 @@ def detect_corners(img_arr: np.ndarray):
     # sort by area (we're assuming the largest contour will be the paper)
     contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
-    ## show contour with largest area
+    # # show contour with largest area
     # contour_image = img_arr # np.ones_like(img_arr) * 255
     # cv2.drawContours(contour_image, contours, 0, (0,255,0), 3)
     # cv2.imshow('Contours', contour_image)
@@ -579,9 +579,14 @@ def digitize(img_arr: np.ndarray):
     numpy.ndarray
         The digitized black and white image
     """
+    # remove shadows (preserves color)
+    shadowless = remove_shadows(np.array(img_arr))
+
+    # clean
+    cleaned = np.array(full_cleaning(shadowless))
 
     # find corners of paper, on fully_cleaned np_array of image
-    corners = detect_corners(np.array(full_cleaning(img_arr)))
+    corners = detect_corners(cleaned)
     # show_corners(img_arr, order_corners(corners))
 
     # transform corners of paper to image size (preserves color)
@@ -592,9 +597,6 @@ def digitize(img_arr: np.ndarray):
                              [0,w]] )
 
     transformed = warp_corners(img_arr, order_corners(corners), new_corners, (h,w))
-
-    # remove shadows (preserves color)
-    shadowless = remove_shadows(transformed)
 
     # apply filters (binarization)
     filtered = binarize(shadowless)
