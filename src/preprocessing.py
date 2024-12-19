@@ -5,6 +5,10 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from scipy.signal import medfilt2d
 
+import matplotlib.pyplot as plt
+from PIL import Image
+from scipy.signal import medfilt2d
+
 
 def detect_corners(img_arr: np.ndarray):
     """

@@ -5,6 +5,8 @@ import os
 import pytesseract
 from PIL import Image
 
+from textCorrection import spellcheck
+
 def cc_analysis(img_gray, img):
 
     # dynamically select c-value based on the image contrast
@@ -20,7 +22,7 @@ def cc_analysis(img_gray, img):
 
     mask = np.zeros(img_gray.shape, dtype="uint8")
 
-    output_dir = '/Users/ananyakommalapati/Desktop/ece549-final-project/src/output_chars_testing'
+    output_dir = '/Users/alyssahuang/Downloads/cc_outputs'
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -62,10 +64,10 @@ def cc_analysis(img_gray, img):
     # characters
     plt.imshow(mask, cmap='gray')
     plt.axis('off')
-    plt.show()
+    # plt.show()
 
     plt.imshow(img)
-    plt.show()
+    # plt.show()
 
     return output_coords
 
@@ -141,14 +143,18 @@ def load_images(img_path):
     print(img_path)
     img = cv2.imread(img_path)
     blurred_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # print(pytesseract.image_to_boxes(Image.open(img_path)))
+    boxes = pytesseract.image_to_boxes(Image.open(img_path))
+    text = ''.join([line.split()[0] for line in boxes.splitlines()])
+
+    # Apply Gaussian blur to reduce noise
+    # blurred_image = cv2.GaussianBlur(img_gray, (3, 3), 0)
 
     # dilate image to make strokes easier to detect -> use erosion cuz inverted
     kernel = np.ones((3,3), np.uint8)
     blurred_image = cv2.erode(blurred_image, kernel, iterations=1)
 
     plt.imshow(blurred_image, cmap='gray')
-    plt.show()
+    # plt.show()
 
     return cc_analysis(blurred_image, img)
 
