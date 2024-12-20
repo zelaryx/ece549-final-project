@@ -73,8 +73,8 @@ def greyfill(img):
         for j in range(1, img.shape[1]-1):
             if img[i, j] != fv and img[i+1, j] == fv  and img[i-1, j] == fv and img[i, j+1] == fv and img[i, j-1] == fv:
                 img[i, j] = fv
-    cv2.imshow("fill_igm", img)
-    cv2.waitKey(0)
+    #cv2.imshow("fill_igm", img)
+    #cv2.waitKey(0)
     return img
 
 
@@ -175,7 +175,7 @@ def line_separator(greyfill_img, coordinates):
     line_separator = np.empty((coordinates.shape[0]), dtype=object)
     count = 0
     for c in coordinates:
-        print(f"coordinate: {c}")
+        #print(f"coordinate: {c}")
         curr_w = 0
         curr_h = c
         current_path = []
@@ -230,77 +230,63 @@ def line_separator(greyfill_img, coordinates):
                     if greyfill_img[curr_h+1, curr_w] == 0.7:
                         down = False
                         curr_h += 1
-                        #current_path = np.append(current_path, [curr_h, curr_w], axis=0)
                         current_path.append([curr_h, curr_w])
                     elif greyfill_img[curr_h+1, curr_w-1] == 0.7:
                         down = False
                         curr_h += 1
                         curr_w -= 1
-                        #current_path = np.append(current_path, [curr_h, curr_w], axis=0)
                         current_path.append([curr_h, curr_w])
                     elif greyfill_img[curr_h+1, curr_w+1] == 0 and greyfill_img[curr_h+1, curr_w] == 1:
                         failed_down = True
                         flag = 'move_right_and_up'
-                       # print(f"current flag: {flag}")
-                       # print(f"current_h, current_w: {curr_h} {curr_w}")
-                        #print(f"current move up check: {move_up_fail}")
-                       # input("Press Enter to continue...")
                     elif greyfill_img[curr_h+1, curr_w] == 0 and greyfill_img[curr_h+1, curr_w-1] == 1:
                         failed_down = True
                         flag = 'move_right_and_up'
-                       # print(f"current flag: {flag}")
-                       # print(f"current_h, current_w: {curr_h} {curr_w}")
-                        #print(f"current move up check: {move_up_fail}")
-                       # input("Press Enter to continue...")
                     else:
                         curr_w -= 1
                         current_path.append([curr_h, curr_w])
 
-                #if greyfill_img[curr_h+1, curr_w+1] == 0 and greyfill_img[curr_h+1, curr_w] != 0.7: #detected blocked region
-                #        print(f"current flag: {flag}")
-                #       print(f"current_h, current_w: {curr_h} {curr_w}")
-                #        #print(f"current move up check: {move_up_fail}")
-                #        input("Press Enter to continue...")
-                #        failed_down = True
-                #        flag = 'move_right_and_up'
             if failed_up and failed_down:
-                #print(f"current flag: {flag}")
-                #print(f"current_h, current_w: {curr_h} {curr_w}")
-                #print(f"current move up check: {move_up_fail}")
-                #input("Press Enter to continue...")
-                pass
+                curr_w += 1
+                current_path.append([curr_h, curr_w])
+                while(greyfill_img[curr_h, curr_w] != 0.7):
+                    curr_w += 1
+                    current_path.append([curr_h, curr_w])
+                flag = 'move_right_and_up'
+                up = False
+                down = False
+                failed_up = False
+                failed_down = False
         line_separator[count] = np.array(current_path)
         count += 1
     return line_separator
 
 def output_lines(lines, img):
-    #print(img.shape)
     old_start = 0
-    counter = 0
+
     line_count = 0
+    keep_lines = np.empty((lines.shape[0]), dtype=object)
+    keep_heights = []
+
     for i in range(0, lines.shape[0]):
         path = lines[i]
         #find min/max heights 
-        min = np.min(path, axis=0)
-        max = np.max(path, axis=0)
-        new_start = max[0]
-        #print(f"min for {i}: {min}")
-        #print(f"max for {i}: {max}")
-        height = max[0] - min[0]
-        width = max[1] - min[1]
-        #print("current max_height", height)
+        min_coord = np.min(path, axis=0)
+        max_coord = np.max(path, axis=0)
+        new_start = max_coord[0]
+
+        height = max_coord[0] - min_coord[0]
+        width = max_coord[1] - min_coord[1]
+
         line_img = np.ones((new_start - old_start, width))
-        #print(line_img.shape)
-        #print(line_img.shape)
+
         for h in range(0, line_img.shape[0]):
             for c in range(0, line_img.shape[1]):
-                #print(img[old_start+h, c, :])
                 line_img[h, c] = img[old_start+h, c]
-        #print(line_img)
-        #tot_pixels = 0
-        #black_pixels = 0
-        old_start = min[0]
-        counter += 1
+
+        line_start_height = old_start
+        old_start = min_coord[0]
+
         if(line_img.shape[0]>0):
             tot_pixels = 0
             black_pixels = 0
@@ -309,53 +295,42 @@ def output_lines(lines, img):
                     tot_pixels += 1
                     if line_img[i, j] != 1:
                         black_pixels += 1
-            #print(black_pixels/tot_pixels)
 
-            #cv2.imshow('generated_img', line_img/255)
-            #cv2.waitKey(0)
-            name = "text_line" + str(line_count) + ".jpg"
-            #os.chdir('\text_lines')
-            #cwd = os.getcwd()
-    
-            # print the current directory
-            #print("current directory:" , cwd)
-            #path = cwd + '/text_lines'
-            #os.chdir(path)
-            line_count += 1
-            cv2.imwrite(name, line_img)
-            #cv2.waitKey(0)
+            name = "text_line" + str(line_count) + " (PRESS ENTER TO KEEP, SPACE TO DISCARD)"
 
-img = cv2.imread('output_clean_p2.jpg', cv2.IMREAD_GRAYSCALE)
-img = img[50:img.shape[0]-50, 50:img.shape[1]-50]
-cv2.imshow("cropped_img", img)
-cv2.waitKey(0)
-#img = cv2.resize(img, (0,0), fx=0.25, fy=0.25)
+            cv2.imshow(name, line_img/255)
+            key = cv2.waitKey(0)
 
-greyfill_img = greyfill(img)
-#cv2.imshow("greyfill_img", img)
-coordinates = detect_line_start(img)
-#print(coordinates)
-lines = line_separator(greyfill_img, coordinates)
+            if key == 13:
+                keep_lines[line_count] = line_img
+                keep_heights.append(line_start_height)
+                line_count += 1
+            elif key == 32:
+                pass
 
-output_lines(lines, img)
-for i in range(0, lines.shape[0]):
-    path = lines[i]
-    for j in range(0, path.shape[0]):
-            point = path[j, :]
-            img[point[0], point[1]] = 0
+            cv2.destroyAllWindows()
 
-cv2.imshow('final_img', img)
-for i in range(0, coordinates.shape[0]):
-    #print(coordinates[i])
-    cv2.circle(greyfill_img, (0, coordinates[i]), 5, (0,0,255))
+            # cv2.imwrite(name, line_img)
+    return keep_lines, keep_heights
 
-ph = 110
-pw = 10
-greyfill_img[ph, pw] = 0.3
-#rint(greyfill_img[ph-7:ph+7, pw-7:pw+7])
-#cv2.circle(greyfill_img, (623, 25), 2, (0, 0,255))
-cv2.imshow("part", greyfill_img[ph-10:ph+10, pw-10:pw+10])
-cv2.imshow("greyfill_img", greyfill_img)
-cv2.waitKey(0)
+def line_detect(img):
+    img = img[50:img.shape[0]-50, 50:img.shape[1]-50]
+    # cv2.imshow("cropped_img", img)
+    # cv2.waitKey(0)
+    #img = cv2.resize(img, (0,0), fx=0.25, fy=0.25)
 
-#line_separator(greyfill_img, coordinates)
+    greyfill_img = greyfill(img)
+    #cv2.imshow("greyfill_img", img)
+    coordinates = detect_line_start(img)
+    #print(coordinates)
+    lines = line_separator(greyfill_img, coordinates)
+
+    return output_lines(lines, img)
+
+
+img = cv2.imread('1_output_clean_p1.jpg', cv2.IMREAD_GRAYSCALE)
+lines, heights = line_detect(img)
+
+print(lines.shape)
+print(len(heights))
+print(heights)
