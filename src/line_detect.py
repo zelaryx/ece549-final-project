@@ -325,12 +325,5 @@ def line_detect(img):
     #print(coordinates)
     lines = line_separator(greyfill_img, coordinates)
 
-    return output_lines(lines, img)
-
-
-img = cv2.imread('1_output_clean_p1.jpg', cv2.IMREAD_GRAYSCALE)
-lines, heights = line_detect(img)
-
-print(lines.shape)
-print(len(heights))
-print(heights)
+    lines, heights = output_lines(lines, img)
+    return [lines.shape, len(heights), heights]

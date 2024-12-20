@@ -29,7 +29,7 @@ for i in range(58, 59):
         digitized2 = clean_img2("DIGITIZED").astype(np.uint8)
 
         # line detection
-        line_imgs = line_detect(digitized1)
+        linesShape, numLines, lineHeights = line_detect(digitized1)
 
         # # word recognition
         # word_recog(digitized1)
