@@ -10,11 +10,12 @@ import numpy as np
 
 # script imports
 from ImageProcessor import ImageProcessor
+from line_detect import line_detect
 from imageToText import *
 
 base_path = "./data/worksheets"
 
-for i in range(51, 52):
+for i in range(58, 59):
     clean_p1 = f"{base_path}/{str(i)}/clean/p1.JPG"
     clean_p2 = f"{base_path}/{str(i)}/clean/p2.JPG"
 
@@ -27,10 +28,11 @@ for i in range(51, 52):
         digitized1 = clean_img1("DIGITIZED").astype(np.uint8)
         digitized2 = clean_img2("DIGITIZED").astype(np.uint8)
 
-        Image.fromarray(digitized1).show()
+        # line detection
+        line_imgs = line_detect(digitized1)
 
         # # word recognition
-        # word_recog(digitized)
+        # word_recog(digitized1)
 
     else:
         print(f"Files not found in folder clean")

@@ -598,6 +598,9 @@ def digitize(img_arr: np.ndarray):
 
     transformed = warp_corners(img_arr, order_corners(corners), new_corners, (h,w))
 
+    # remove shadows (preserves color)
+    shadowless = remove_shadows(transformed)
+
     # apply filters (binarization)
     filtered = binarize(shadowless)
 
